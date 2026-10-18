@@ -1,0 +1,33 @@
+# Render Blueprint: https://render.com/docs/blueprint-spec
+databases:
+  - name: mirra-db
+    plan: free
+    databaseName: mirra
+    user: mirra
+
+services:
+  - type: web
+    name: mirra-analytics
+    runtime: docker
+    plan: free
+    dockerfilePath: ./analytics/Dockerfile
+    dockerContext: ./analytics
+    healthCheckPath: /health
+
+  - type: web
+    name: mirra-web
+    runtime: docker
+    plan: free
+    dockerfilePath: ./data-manager/Dockerfile
+    dockerContext: .
+    healthCheckPath: /api/health
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: mirra-db
+          property: connectionString
+      - key: ANALYTICS_URL
+        fromService:
+          name: mirra-analytics
+          type: web
+          property: hostport

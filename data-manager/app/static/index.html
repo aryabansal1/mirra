@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Mirra Breast Monitor</title>
+  <link rel="stylesheet" href="/static/styles.css" />
+</head>
+<body>
+  <aside class="sidebar">
+    <div class="brand">Mirra</div>
+    <nav>
+      <a href="#/" data-nav="dashboard">Scans</a>
+      <a href="#/scans" data-nav="scans">All scans</a>
+      <a href="#/patients" data-nav="patients">Patients</a>
+    </nav>
+    <div class="sidebar-foot">Threshold model &middot; demo data</div>
+  </aside>
+  <main>
+    <header class="topbar">
+      <form id="search-form" class="search">
+        <input id="search" type="search" placeholder="Search scan by patient UID or recorder ID" />
+      </form>
+      <button id="sync-btn" class="link-btn" title="Load data/synthetic_scans.csv (already transferred via Bluetooth)">Synchronize scan data</button>
+      <label class="link-btn upload">Upload CSV<input id="upload" type="file" accept=".csv" hidden /></label>
+    </header>
+    <div id="toast" class="toast" hidden></div>
+    <section id="view"></section>
+  </main>
+  <script src="/static/app.js"></script>
+</body>
+</html>

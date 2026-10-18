@@ -31,3 +31,9 @@ services:
           name: mirra-analytics
           type: web
           property: hostport
+      - key: COOKIE_SECURE
+        value: "true"
+      - key: ADMIN_PASSWORD
+        generateValue: true
+      - key: DEMO_PATIENT_PASSWORD
+        generateValue: true

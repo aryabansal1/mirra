@@ -78,5 +78,36 @@ class AnalysisResult(Base):
     scan: Mapped[Scan] = relationship(back_populates="result")
 
 
+# Accounts, login sessions and patient-owned devices
+class User(Base):
+    __tablename__ = "users"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    username: Mapped[str] = mapped_column(String(64), unique=True)
+    password_hash: Mapped[str] = mapped_column(String(256))
+    role: Mapped[str] = mapped_column(String(16))  # "admin" | "patient"
+    patient_uid: Mapped[str | None] = mapped_column(ForeignKey("patients.uid"), nullable=True)
+
+
+class AuthSession(Base):
+    __tablename__ = "auth_sessions"
+
+    token_hash: Mapped[str] = mapped_column(String(64), primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
+    expires_at: Mapped[datetime] = mapped_column(DateTime)
+
+    user: Mapped[User] = relationship()
+
+
+class Device(Base):
+    """A wearable linked to the patient whose account connected it. Its readings belong to that patient."""
+
+    __tablename__ = "devices"
+
+    device_id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    patient_uid: Mapped[str] = mapped_column(ForeignKey("patients.uid"))
+    connected_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+
+
 def init_db() -> None:
     Base.metadata.create_all(engine)

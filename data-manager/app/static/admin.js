@@ -1,30 +1,5 @@
-const view = document.getElementById("view");
-const toastEl = document.getElementById("toast");
-
-const api = async (path, opts) => {
-  const r = await fetch(path, opts);
-  if (!r.ok) throw new Error((await r.json().catch(() => ({}))).detail || r.statusText);
-  return r.json();
-};
-
-const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
-const fmtDate = (iso) => (iso ? new Date(iso).toLocaleString([], { dateStyle: "medium", timeStyle: "short" }) : "—");
-const statusText = { uploaded: "Uploaded", analyzing: "Analyzing", results_ready: "Results ready", failed: "Failed" };
-
-function toast(msg) {
-  toastEl.textContent = msg;
-  toastEl.hidden = false;
-  clearTimeout(toast.t);
-  toast.t = setTimeout(() => (toastEl.hidden = true), 4000);
-}
-
-function resultCell(s) {
-  if (!s.result) return "—";
-  return s.result.abnormal ? `<span class="result-bad">Abnormal</span>` : `<span class="result-ok">Normal</span>`;
-}
-
 function scanTable(scans) {
-  if (!scans.length) return `<div class="empty">No scans yet. Click <b>Sync from device</b> to receive readings from the ESP32.</div>`;
+  if (!scans.length) return `<div class="empty">No scans yet. Click <b>Upload CSV</b> to import readings, or wait for patients to sync their devices.</div>`;
   return `<table><thead><tr><th>Patient UID</th><th>Device / session</th><th>Recorded</th><th>Temp (°C)</th><th>Status</th><th>Result</th></tr></thead><tbody>
     ${scans
       .map(
@@ -38,24 +13,9 @@ function bindRows() {
   view.querySelectorAll("tbody tr[data-id]").forEach((tr) => (tr.onclick = () => (location.hash = `#/scans/${tr.dataset.id}`)));
 }
 
-let device;
-const getDevice = async () => (device ??= await SimulatedBluetoothDevice.connect());
-
 async function renderDashboard() {
-  const [s, scans, dev] = await Promise.all([api("/api/summary"), api("/api/scans"), getDevice()]);
-  const server = await api(`/api/devices/${encodeURIComponent(dev.deviceId)}`);
-  const pending = dev.unconfirmed().length;
+  const [s, scans] = await Promise.all([api("/api/summary"), api("/api/scans")]);
   view.innerHTML = `
-    <div class="card stat-row"><div class="label">Device</div>
-      <div class="device-name"><b>${esc(dev.deviceId)}</b>Simulated Bluetooth<br />Last sync: ${fmtDate(server.last_synced_at)}</div>
-      <div class="stat"><b>${dev.allReadings().length}</b><span>Stored on device</span></div>
-      <div class="stat ${pending ? "bad" : ""}"><b>${pending}</b><span>Awaiting confirmation</span></div>
-      <div class="device-actions">
-        <button class="btn" id="dash-sync">Sync from device</button>
-        <div class="row"><button class="link-btn" id="record">Record new reading</button>
-          <button class="link-btn" id="reset-device" title="Forget which readings were confirmed, so the device resends everything">Reset device memory</button></div>
-        <label><input type="checkbox" id="simulate-drop" ${simulateDrop ? "checked" : ""} /> Simulate connection drop</label>
-      </div></div>
     <div class="card stat-row"><div class="label">Scan</div>
       <div class="stat"><b>${s.patients}</b><span>Patients</span></div>
       <div class="stat"><b>${s.uploaded + s.analyzing + s.results_ready + s.failed}</b><span>Readings received</span></div></div>
@@ -69,18 +29,6 @@ async function renderDashboard() {
       <a class="btn outline" href="#/scans?status=results_ready" style="text-decoration:none">View results</a></div>
     <h2>Recent scans</h2>
     <div class="card">${scanTable(scans.slice(0, 8))}</div>`;
-  document.getElementById("dash-sync").onclick = sync;
-  document.getElementById("simulate-drop").onchange = (e) => (simulateDrop = e.target.checked);
-  document.getElementById("record").onclick = () => {
-    const r = dev.recordReading();
-    toast(`Device recorded ${r.session_id} (${r.temperature_c.toFixed(2)} °C). Not yet synced.`);
-    route();
-  };
-  document.getElementById("reset-device").onclick = () => {
-    dev.resetMemory();
-    toast("Device memory reset: all readings will be resent (the website ignores duplicates).");
-    route();
-  };
   bindRows();
 }
 
@@ -133,32 +81,12 @@ async function renderPatients() {
   const ps = await api("/api/patients");
   view.innerHTML = `<h2>Patients</h2><div class="card">${
     ps.length
-      ? `<table><thead><tr><th>Patient UID</th><th>Patch size</th><th>Registered</th><th>Scans</th></tr></thead><tbody>
-        ${ps.map((p) => `<tr data-uid="${esc(p.uid)}"><td><b>${esc(p.uid)}</b></td><td>${p.patch_size}</td><td>${fmtDate(p.registered_at)}</td><td>${p.scans}</td></tr>`).join("")}
+      ? `<table><thead><tr><th>Patient UID</th><th>Patch size</th><th>Device</th><th>Registered</th><th>Scans</th></tr></thead><tbody>
+        ${ps.map((p) => `<tr data-uid="${esc(p.uid)}"><td><b>${esc(p.uid)}</b></td><td>${p.patch_size}</td><td>${esc(p.device_id || "—")}</td><td>${fmtDate(p.registered_at)}</td><td>${p.scans}</td></tr>`).join("")}
         </tbody></table>`
       : `<div class="empty">No patients yet.</div>`
   }</div>`;
   view.querySelectorAll("tr[data-uid]").forEach((tr) => (tr.onclick = () => (location.hash = `#/scans?q=${encodeURIComponent(tr.dataset.uid)}`)));
-}
-
-let simulateDrop = false;
-
-async function sync() {
-  try {
-    const dev = await getDevice();
-    if (!dev.unconfirmed().length) return toast("Device is up to date: no unconfirmed readings.");
-    const r = await syncDevice(dev, { simulateDrop });
-    const dup = r.duplicates ? `, ${r.duplicates} duplicate(s) ignored` : "";
-    const left = dev.unconfirmed().length;
-    toast(
-      r.dropped
-        ? `Connection lost: ${r.accepted} new reading(s) saved${dup}; ${left} still awaiting confirmation. Sync again to resume.`
-        : `Synced ${r.accepted} new reading(s)${dup}. Analyzing…`
-    );
-    pollUntilSettled();
-  } catch (e) {
-    toast(`Sync failed: ${e.message}`);
-  }
 }
 
 async function pollUntilSettled() {
@@ -186,7 +114,7 @@ async function route() {
   }
 }
 
-document.getElementById("sync-btn").onclick = sync;
+document.getElementById("logout").onclick = logout;
 document.getElementById("search-form").onsubmit = (e) => {
   e.preventDefault();
   const q = document.getElementById("search").value.trim();
@@ -206,5 +134,11 @@ document.getElementById("upload").onchange = async (e) => {
   }
   e.target.value = "";
 };
-window.addEventListener("hashchange", route);
-route();
+(async () => {
+  const me = await getMe();
+  if (me?.role !== "admin") {
+    return renderLogin({ role: "admin", title: "Admin login", altHref: "/", altText: "Patient? Log in to the patient portal →" });
+  }
+  window.addEventListener("hashchange", route);
+  route();
+})();

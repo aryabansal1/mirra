@@ -60,8 +60,18 @@ tbody tr:hover { background: #faf7fb; }
 h2 { font-weight: 500; margin: 0 0 16px; }
 .back { color: var(--purple); text-decoration: none; font-size: 14px; display: inline-block; margin-bottom: 12px; }
 .disclaimer { font-size: 12px; color: var(--muted); margin-top: 16px; }
-.device-actions { margin-left: auto; display: flex; flex-direction: column; align-items: flex-end; gap: 8px; }
-.device-actions .row { display: flex; gap: 10px; align-items: center; }
-.device-actions label { font-size: 13px; color: var(--muted); display: flex; gap: 6px; align-items: center; }
 .device-name { font-size: 13px; color: var(--muted); }
 .device-name b { color: var(--text); font-size: 15px; display: block; }
+.logged-out .topbar, .logged-out .sidebar nav, .logged-out .logout { display: none; }
+.logout { padding: 4px 0; color: #fff; }
+.login { max-width: 380px; margin: 60px auto; padding: 32px; }
+.login form { display: flex; flex-direction: column; gap: 14px; }
+.login label { display: flex; flex-direction: column; gap: 6px; font-size: 13px; color: var(--muted); }
+.login input { padding: 10px 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px; }
+.login-error { color: var(--bad); font-size: 13px; }
+.alt-login { display: block; margin-top: 18px; font-size: 13px; color: var(--purple); }
+.diagnosis { padding: 20px 24px; }
+.diagnosis .label { color: var(--muted); font-size: 13px; text-transform: uppercase; letter-spacing: .5px; }
+.diagnosis-label { font-size: 26px; margin: 8px 0 4px; }
+.diagnosis-meta { color: var(--muted); font-size: 14px; }
+.patient-uid { font-size: 13px; color: var(--muted); margin-left: 8px; font-weight: 400; }

@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Mirra Breast Monitor</title>
+  <title>Mirra – Admin</title>
   <link rel="stylesheet" href="/static/styles.css" />
 </head>
 <body>
@@ -14,20 +14,19 @@
       <a href="#/scans" data-nav="scans">All scans</a>
       <a href="#/patients" data-nav="patients">Patients</a>
     </nav>
-    <div class="sidebar-foot">Threshold model &middot; demo data</div>
+    <div class="sidebar-foot">Admin &middot; threshold model<br /><button class="link-btn logout" id="logout">Log out</button></div>
   </aside>
   <main>
     <header class="topbar">
       <form id="search-form" class="search">
         <input id="search" type="search" placeholder="Search by patient UID, device or session" />
       </form>
-      <button id="sync-btn" class="link-btn" title="Send unconfirmed readings from the (simulated) ESP32 over Bluetooth">Sync from device</button>
       <label class="link-btn upload">Upload CSV<input id="upload" type="file" accept=".csv" hidden /></label>
     </header>
     <div id="toast" class="toast" hidden></div>
     <section id="view"></section>
   </main>
-  <script src="/static/device.js"></script>
-  <script src="/static/app.js"></script>
+  <script src="/static/common.js"></script>
+  <script src="/static/admin.js"></script>
 </body>
 </html>

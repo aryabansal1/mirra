@@ -19,14 +19,15 @@
   <main>
     <header class="topbar">
       <form id="search-form" class="search">
-        <input id="search" type="search" placeholder="Search scan by patient UID or recorder ID" />
+        <input id="search" type="search" placeholder="Search by patient UID, device or session" />
       </form>
-      <button id="sync-btn" class="link-btn" title="Load data/synthetic_scans.csv (already transferred via Bluetooth)">Synchronize scan data</button>
+      <button id="sync-btn" class="link-btn" title="Send unconfirmed readings from the (simulated) ESP32 over Bluetooth">Sync from device</button>
       <label class="link-btn upload">Upload CSV<input id="upload" type="file" accept=".csv" hidden /></label>
     </header>
     <div id="toast" class="toast" hidden></div>
     <section id="view"></section>
   </main>
+  <script src="/static/device.js"></script>
   <script src="/static/app.js"></script>
 </body>
 </html>

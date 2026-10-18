@@ -44,13 +44,17 @@ class Patient(Base):
 
 
 class Scan(Base):
+    """One synced reading. (device_id, session_id, seq) identifies it on the device and makes sync idempotent."""
+
     __tablename__ = "scans"
-    __table_args__ = (UniqueConstraint("patient_uid", "recorder_id", "scan_start"),)
+    __table_args__ = (UniqueConstraint("device_id", "session_id", "seq"),)
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     patient_uid: Mapped[str] = mapped_column(ForeignKey("patients.uid"))
-    recorder_id: Mapped[str] = mapped_column(String(64))
-    scan_start: Mapped[datetime] = mapped_column(DateTime)
+    device_id: Mapped[str] = mapped_column(String(64))
+    session_id: Mapped[str] = mapped_column(String(64))
+    seq: Mapped[int] = mapped_column(Integer)
+    recorded_at: Mapped[datetime] = mapped_column(DateTime)
     temperature_c: Mapped[float] = mapped_column(Float)
     status: Mapped[str] = mapped_column(String(32), default="uploaded")
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())

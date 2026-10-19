@@ -1,0 +1,38 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: mirra
+      POSTGRES_PASSWORD: mirra
+      POSTGRES_DB: mirra
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U mirra"]
+      interval: 2s
+      retries: 20
+
+  analytics:
+    build: ./analytics
+    ports:
+      - "8001:8001"
+
+  data-manager:
+    build:
+      context: .
+      dockerfile: data-manager/Dockerfile
+    environment:
+      DATABASE_URL: postgresql://mirra:mirra@db:5432/mirra
+      ANALYTICS_URL: http://analytics:8001
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+      analytics:
+        condition: service_started
+
+volumes:
+  pgdata:

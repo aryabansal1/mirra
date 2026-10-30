@@ -132,3 +132,9 @@ def test_upload_rejects_missing_columns(client):
     login(client, "admin", "admin", "admin")
     r = client.post("/api/scans/upload", files={"file": ("x.csv", b"patient_uid,temperature_c\nA,36\n")})
     assert r.status_code == 400
+
+
+def test_analyze_runs_paa_model_in_process_without_analytics_url(monkeypatch):
+    monkeypatch.setattr(analytics_client, "ANALYTICS_URL", "")
+    assert analytics_client.analyze(1, 36.0)["abnormal"] is True
+    assert analytics_client.analyze(2, 34.0)["label"] == "Normal"

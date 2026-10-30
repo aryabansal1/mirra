@@ -122,10 +122,31 @@ pip install -r analytics/requirements.txt -r data-manager/requirements.txt pytes
 (cd analytics && pytest) && (cd data-manager && pytest)
 ```
 
-## Deploy (Render)
+## Deploy (free: Render + Neon)
 
-`render.yaml` is a Render Blueprint that creates a Postgres database, the analytics service and the
-website/data manager. In Render: **New → Blueprint**, select this repo, and apply. The website URL is the
-`mirra-web` service URL.
+The free deploy is a single Render web service, `mirra-web`. It serves the website and API and runs the PAA model
+in-process (leave `ANALYTICS_URL` unset; set it to call the separate `analytics/` service, as `docker compose`
+does). Postgres runs on [Neon](https://neon.com)'s free plan. Why this setup:
+
+- Render's free Postgres is deleted 30 days after creation. Neon's free plan doesn't expire and needs no credit card.
+- One service instead of two means one cold start instead of two chained ones, and no 30 s analytics timeout to hit
+  while the analytics service is still waking up.
+- Render spins free services down after 15 minutes without traffic, and waking takes about a minute. One service
+  pinged every few minutes stays awake within Render's 750 free instance hours a month (a 31-day month is 744 h).
+  `/api/health` doesn't touch the database, so Neon can still scale to zero between real requests.
+
+Steps:
+
+1. **Neon:** create a free project and copy its connection string
+   (`postgresql://...neon.tech/neondb?sslmode=require`).
+2. **Render:** **New → Blueprint**, select this repo and apply. When asked, paste the Neon string as `DATABASE_URL`.
+   Tables and demo accounts are created on first start. Find the generated `ADMIN_PASSWORD` and
+   `DEMO_PATIENT_PASSWORD` under the service's **Environment** tab.
+3. **Keep-alive (optional):** add a free [UptimeRobot](https://uptimerobot.com) HTTP monitor for
+   `https://<mirra-web URL>/api/health` every 5 minutes. It also emails you if the site goes down.
+
+Moving from the old Blueprint (separate `mirra-db` and `mirra-analytics`): to keep existing data, run
+`pg_dump "<Render external DB URL>" | psql "<Neon URL>"`. Then set `DATABASE_URL` on `mirra-web` to the Neon URL,
+remove `ANALYTICS_URL`, re-sync the Blueprint, and delete `mirra-analytics` and `mirra-db`.
 
 > Demo only: synthetic data and a placeholder model. Not a medical device.
